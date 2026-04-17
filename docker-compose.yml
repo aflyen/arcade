@@ -1,0 +1,17 @@
+services:
+  arcade:
+    build: .
+    image: arcade:latest
+    container_name: arcade
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - arcade-data:/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PATH=/data/arcade.db
+
+volumes:
+  arcade-data:

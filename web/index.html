@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Andreas Arkade 🌸</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #1a0f1f;
+        color: #fff;
+        font-family: "Zen Maru Gothic", system-ui, sans-serif;
+        overflow: hidden;
+        height: 100%;
+      }
+      #game {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game" tabindex="-1"></div>
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      // Keep keyboard focus on the canvas even if other elements steal it.
+      document.addEventListener("pointerdown", () => {
+        const c = document.querySelector("#game canvas");
+        if (c && c !== document.activeElement) c.focus && c.focus();
+      });
+    </script>
+  </body>
+</html>
