@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const GAME_IDS = ["kaiser", "slush", "trampett", "sminke"] as const;
+export const GAME_IDS = ["kaiser", "slush", "trampett", "sykkel"] as const;
 export type GameId = (typeof GAME_IDS)[number];
 
 export const gameIdSchema = z.enum(GAME_IDS);

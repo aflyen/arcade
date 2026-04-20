@@ -1,64 +1,78 @@
 import Phaser from "phaser";
 import { BaseGameScene } from "../../core/BaseGameScene.js";
 import { Theme } from "../../core/Theme.js";
-import { MAX_LEVEL, difficulty } from "../../core/LevelCurve.js";
+import { MAX_LEVEL } from "../../core/LevelCurve.js";
 
-type KeyCode = "UP" | "DOWN" | "LEFT" | "RIGHT";
-const KEY_ARROWS: Record<KeyCode, string> = { UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" };
+type Phase = "running" | "jumping" | "judged";
 
-type Phase = "running" | "takeoff" | "jumping" | "judged";
+type LevelCfg = {
+  requiredHalfTurns: number;
+  landTolRad: number;
+  sweetZoneW: number;
+  jumpDurMs: number;
+};
+
+const LEVELS: LevelCfg[] = [
+  { requiredHalfTurns: 1, landTolRad: 1.20, sweetZoneW: 170, jumpDurMs: 1700 },
+  { requiredHalfTurns: 2, landTolRad: 1.00, sweetZoneW: 150, jumpDurMs: 1800 },
+  { requiredHalfTurns: 2, landTolRad: 0.80, sweetZoneW: 135, jumpDurMs: 1900 },
+  { requiredHalfTurns: 3, landTolRad: 0.60, sweetZoneW: 120, jumpDurMs: 2000 },
+  { requiredHalfTurns: 4, landTolRad: 0.45, sweetZoneW: 110, jumpDurMs: 2100 },
+];
+
+const ROT_ACCEL = 9;
+const MAX_OMEGA = 14;
+const BRAKE_PER_SEC = 3.2;
 
 export class TrampettScene extends BaseGameScene {
   private andrea!: Phaser.GameObjects.Text;
   private trampett!: Phaser.GameObjects.Graphics;
   private sweetZone!: Phaser.GameObjects.Graphics;
   private phase: Phase = "running";
-  private runSpeed = 320;
-  private attemptsLeft = 3;
+  private runSpeed = 340;
   private attemptsPerLevel = 3;
   private attemptsThisLevel = 0;
   private successesThisLevel = 0;
-  private trickSeq: KeyCode[] = [];
-  private trickProgress = 0;
-  private trickStartTime = 0;
-  private trickDuration = 0;
-  private seqText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private trickText!: Phaser.GameObjects.Text;
   private judgeText!: Phaser.GameObjects.Text;
   private attemptText!: Phaser.GameObjects.Text;
-  private sweetZoneW = 120;
+  private hintText!: Phaser.GameObjects.Text;
   private sweetCenter = 620;
   private jumpStartX = 0;
   private jumpTime = 0;
   private jumpDur = 0;
   private jumpMaxH = 0;
-  private spaceKey!: Phaser.Input.Keyboard.Key;
+  private omega = 0;
+  private totalAbsRot = 0;
+  private startRot = 0;
+  private leftKey!: Phaser.Input.Keyboard.Key;
+  private rightKey!: Phaser.Input.Keyboard.Key;
+  private downKey!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super("TrampettScene");
   }
 
+  private cfg(): LevelCfg {
+    return LEVELS[Math.max(0, Math.min(LEVELS.length - 1, this.level - 1))];
+  }
+
   create() {
+    this.showLives = false;
     const { width, height } = this.scale;
-    // Gym floor
     this.add.graphics().fillStyle(0x2a1b34, 1).fillRect(0, 0, width, height);
     const floor = this.add.graphics();
     floor.fillStyle(0x8b5a3c, 1);
     floor.fillRect(0, height - 120, width, 120);
-    // Mat on landing side
     const mat = this.add.graphics();
     mat.fillStyle(0x4169e1, 1);
     mat.fillRoundedRect(800, height - 160, 420, 40, 8);
 
-    // Trampett
     this.trampett = this.add.graphics();
     this.redrawTrampett();
-
-    // Sweet zone indicator (below trampett)
     this.sweetZone = this.add.graphics();
-    this.redrawSweetZone(true);
 
-    // Sign
     this.add
       .text(width / 2, 60, "🤸 Trampett-Triks 🤸", {
         fontFamily: Theme.font,
@@ -68,19 +82,13 @@ export class TrampettScene extends BaseGameScene {
       })
       .setOrigin(0.5);
 
-    this.andrea = this.add.text(100, height - 140, "🏃‍♀️", { fontSize: "56px" }).setOrigin(0.5);
-
-    this.seqText = this.add
-      .text(width / 2, 280, "", {
-        fontFamily: Theme.font,
-        fontSize: "64px",
-        color: "#fff",
-        fontStyle: "900",
-      })
-      .setOrigin(0.5);
+    this.andrea = this.add
+      .text(100, height - 140, "🏃‍♀️", { fontSize: "56px" })
+      .setOrigin(0.5)
+      .setScale(-1, 1);
 
     this.statusText = this.add
-      .text(width / 2, 220, "", {
+      .text(width / 2, 200, "", {
         fontFamily: Theme.font,
         fontSize: "24px",
         color: "#a0e7e5",
@@ -88,10 +96,28 @@ export class TrampettScene extends BaseGameScene {
       })
       .setOrigin(0.5);
 
-    this.judgeText = this.add
-      .text(width / 2, 360, "", {
+    this.trickText = this.add
+      .text(width / 2, 250, "", {
         fontFamily: Theme.font,
-        fontSize: "72px",
+        fontSize: "44px",
+        color: "#fff",
+        fontStyle: "900",
+      })
+      .setOrigin(0.5);
+
+    this.hintText = this.add
+      .text(width / 2, 310, "", {
+        fontFamily: Theme.font,
+        fontSize: "20px",
+        color: "#ffd9ec",
+        fontStyle: "700",
+      })
+      .setOrigin(0.5);
+
+    this.judgeText = this.add
+      .text(width / 2, 380, "", {
+        fontFamily: Theme.font,
+        fontSize: "60px",
       })
       .setOrigin(0.5);
 
@@ -106,12 +132,9 @@ export class TrampettScene extends BaseGameScene {
       .setDepth(1000);
 
     this.buildHud();
-    this.spaceKey = this.input.keyboard!.addKey("SPACE");
-
-    this.input.keyboard!.on("keydown-UP", () => this.onTrickKey("UP"));
-    this.input.keyboard!.on("keydown-DOWN", () => this.onTrickKey("DOWN"));
-    this.input.keyboard!.on("keydown-LEFT", () => this.onTrickKey("LEFT"));
-    this.input.keyboard!.on("keydown-RIGHT", () => this.onTrickKey("RIGHT"));
+    this.leftKey = this.input.keyboard!.addKey("LEFT");
+    this.rightKey = this.input.keyboard!.addKey("RIGHT");
+    this.downKey = this.input.keyboard!.addKey("DOWN");
     this.input.keyboard!.on("keydown-SPACE", () => this.onSpace());
 
     this.startLevel();
@@ -129,35 +152,26 @@ export class TrampettScene extends BaseGameScene {
   private redrawSweetZone(visible: boolean) {
     this.sweetZone.clear();
     if (!visible) return;
+    const w = this.cfg().sweetZoneW;
     this.sweetZone.fillStyle(0x7cffbc, 0.25);
-    this.sweetZone.fillRect(
-      this.sweetCenter - this.sweetZoneW / 2,
-      this.scale.height - 200,
-      this.sweetZoneW,
-      70,
-    );
+    this.sweetZone.fillRect(this.sweetCenter - w / 2, this.scale.height - 200, w, 70);
     this.sweetZone.lineStyle(2, 0x7cffbc, 0.8);
-    this.sweetZone.strokeRect(
-      this.sweetCenter - this.sweetZoneW / 2,
-      this.scale.height - 200,
-      this.sweetZoneW,
-      70,
-    );
+    this.sweetZone.strokeRect(this.sweetCenter - w / 2, this.scale.height - 200, w, 70);
   }
 
   private startLevel() {
     this.attemptsThisLevel = 0;
     this.successesThisLevel = 0;
-    const d = difficulty(this.level);
-    this.sweetZoneW = Math.max(36, 140 - this.level * 16);
-    this.runSpeed = 300 + d * 35;
+    this.runSpeed = 320 + this.level * 12;
     this.redrawSweetZone(true);
     this.updateAttemptText();
   }
 
   private updateAttemptText() {
+    const c = this.cfg();
+    const halfName = c.requiredHalfTurns === 1 ? "½ salto" : `${c.requiredHalfTurns / 2} salto`.replace(".5", "½");
     this.attemptText.setText(
-      `Forsøk ${this.attemptsThisLevel + 1}/${this.attemptsPerLevel}   Treff: ${this.successesThisLevel}`,
+      `Forsøk ${this.attemptsThisLevel + 1}/${this.attemptsPerLevel}   Mål: ${halfName}`,
     );
   }
 
@@ -166,157 +180,154 @@ export class TrampettScene extends BaseGameScene {
     this.andrea.setPosition(100, this.scale.height - 140);
     this.andrea.setRotation(0);
     this.andrea.setText("🏃‍♀️");
-    this.trickSeq = [];
-    this.trickProgress = 0;
-    this.seqText.setText("");
-    this.statusText.setText("Løp mot trampetten → trykk SPACE i den grønne sonen!");
+    this.omega = 0;
+    this.totalAbsRot = 0;
+    this.statusText.setText("Løp og trykk SPACE i den grønne sonen!");
+    this.trickText.setText("");
+    this.hintText.setText("I lufta: ← → for salto · ↓ for å bremse · land på beina!");
     this.judgeText.setText("");
     this.redrawSweetZone(true);
     this.updateAttemptText();
   }
 
-  private generateSequence(): KeyCode[] {
-    const d = difficulty(this.level);
-    const len = Math.min(6, 2 + Math.floor(d));
-    const pool: KeyCode[] = ["UP", "DOWN", "LEFT", "RIGHT"];
-    const seq: KeyCode[] = [];
-    for (let i = 0; i < len; i++) {
-      seq.push(pool[Math.floor(Math.random() * pool.length)]);
-    }
-    return seq;
-  }
-
   private onSpace() {
     if (this.phase !== "running") return;
     const dist = Math.abs(this.andrea.x - this.sweetCenter);
-    if (dist <= this.sweetZoneW / 2) {
-      this.launch(true);
+    const half = this.cfg().sweetZoneW / 2;
+    if (dist <= half) {
+      this.launch(1.0);
+    } else if (dist <= half + 60) {
+      this.launch(0.7);
     } else {
-      this.launch(false);
+      this.stumble();
     }
   }
 
-  private launch(hit: boolean) {
-    this.phase = "takeoff";
-    if (!hit) {
-      // Stumble fail — no trick
-      this.statusText.setText("Bommet på trampetten!");
-      this.tweens.add({
-        targets: this.andrea,
-        angle: 720,
-        y: this.scale.height - 160,
-        x: this.andrea.x + 200,
-        duration: 900,
-        onComplete: () => this.judge(false, 0, 0),
-      });
-      return;
-    }
+  private stumble() {
+    this.phase = "judged";
+    this.statusText.setText("Bommet på trampetten!");
+    this.redrawSweetZone(false);
+    this.tweens.add({
+      targets: this.andrea,
+      angle: 90,
+      y: this.scale.height - 130,
+      x: this.andrea.x + 80,
+      duration: 600,
+      onComplete: () => {
+        this.judgeText.setText("😵");
+        this.attemptsThisLevel += 1;
+        this.updateAttemptText();
+        this.time.delayedCall(1100, () => this.afterAttempt());
+      },
+    });
+  }
 
-    this.trickSeq = this.generateSequence();
-    this.trickProgress = 0;
-    this.refreshSeqDisplay();
-    this.statusText.setText("🛫 I lufta! Trykk tastene i riktig rekkefølge!");
+  private launch(power: number) {
+    this.phase = "jumping";
+    this.redrawSweetZone(false);
+    this.statusText.setText("🛫 I lufta!");
     this.jumpStartX = this.andrea.x;
     this.jumpTime = 0;
-    this.jumpDur = Math.max(900, 1900 - this.level * 200);
-    this.jumpMaxH = 320;
-    this.trickStartTime = this.time.now;
-    this.trickDuration = this.jumpDur;
-    this.phase = "jumping";
+    this.jumpDur = this.cfg().jumpDurMs * power;
+    this.jumpMaxH = 320 * power;
+    this.omega = 0;
+    this.totalAbsRot = 0;
+    this.startRot = this.andrea.rotation;
   }
 
-  private refreshSeqDisplay() {
-    const parts = this.trickSeq.map((k, i) => {
-      const ch = KEY_ARROWS[k];
-      if (i < this.trickProgress) return `[${ch}]`;
-      return ch;
-    });
-    this.seqText.setText(parts.join("  "));
+  private updateTrickLabel() {
+    const halves = Math.floor(this.totalAbsRot / Math.PI);
+    let label = "";
+    if (halves === 0) label = "klar...";
+    else if (halves === 1) label = "½ salto";
+    else if (halves === 2) label = "Hel salto!";
+    else if (halves === 3) label = "1½ salto!";
+    else if (halves === 4) label = "Dobbel salto!!";
+    else if (halves === 5) label = "2½ salto!!";
+    else label = `${(halves / 2).toFixed(halves % 2 === 0 ? 0 : 1).replace(".5", "½")} salto 🤯`;
+    this.trickText.setText(label);
   }
 
-  private onTrickKey(k: KeyCode) {
-    if (this.phase !== "jumping") return;
-    const expected = this.trickSeq[this.trickProgress];
-    if (expected === k) {
-      this.trickProgress += 1;
-      this.refreshSeqDisplay();
-      if (this.trickProgress >= this.trickSeq.length) {
-        this.statusText.setText("✨ Perfekt sekvens!");
-      }
-    } else {
-      // Penalty: reset progress (brutal but forgiving since seq is short)
-      this.trickProgress = Math.max(0, this.trickProgress - 1);
-      this.refreshSeqDisplay();
-      this.cameras.main.shake(120, 0.006);
-    }
-  }
-
-  private judge(takeoffHit: boolean, correct: number, total: number) {
+  private judgeLanding() {
     this.phase = "judged";
-    let judgeEmoji = "💀";
+    const c = this.cfg();
+    const finalRot = this.andrea.rotation - this.startRot;
+    const wrapped = Phaser.Math.Angle.Wrap(finalRot);
+    const offset = Math.abs(wrapped);
+    const halves = Math.floor(this.totalAbsRot / Math.PI);
+
+    let judgeEmoji = "";
     let points = 0;
     let success = false;
-    if (!takeoffHit) {
-      judgeEmoji = "💥";
+    let crashed = false;
+
+    if (offset > c.landTolRad) {
+      judgeEmoji = "💥 Au!";
       points = 5;
+      crashed = true;
+    } else if (halves < c.requiredHalfTurns) {
+      judgeEmoji = "👌 Trygg landing";
+      points = 30 + halves * 20;
     } else {
-      const ratio = total === 0 ? 0 : correct / total;
-      if (ratio >= 1) {
-        judgeEmoji = "🏅✨👍👍";
-        points = 200 * this.level + 50;
-        success = true;
-      } else if (ratio >= 0.6) {
-        judgeEmoji = "👍👌";
-        points = Math.round(120 * ratio) * this.level;
-        success = true;
-      } else if (ratio > 0) {
-        judgeEmoji = "👎😬";
-        points = Math.round(40 * ratio);
+      const perfect = offset <= c.landTolRad * 0.4;
+      if (perfect) {
+        judgeEmoji = "🏅✨ Perfekt!";
+        points = 100 * this.level + halves * 50;
       } else {
-        judgeEmoji = "🙈";
-        points = 10;
+        judgeEmoji = "👍 Bra triks!";
+        points = 60 * this.level + halves * 30;
       }
+      success = true;
     }
+
+    if (crashed) {
+      this.andrea.setRotation(Math.PI / 2);
+      this.andrea.setText("🤕");
+    } else {
+      this.andrea.setRotation(0);
+      this.andrea.setText("🤸");
+    }
+
     this.judgeText.setText(judgeEmoji);
     this.addScore(points);
     if (success) this.successesThisLevel += 1;
     this.attemptsThisLevel += 1;
     this.updateAttemptText();
 
-    this.time.delayedCall(1400, () => this.afterAttempt());
+    this.time.delayedCall(1500, () => this.afterAttempt());
   }
 
   private afterAttempt() {
     if (this.attemptsThisLevel >= this.attemptsPerLevel) {
       const passed = this.successesThisLevel >= 2;
       if (!passed) {
-        if (this.loseLife()) {
-          this.gameOver();
-          return;
-        }
+        this.gameOver();
+        return;
       }
-      if (passed) {
-        if (this.level >= MAX_LEVEL) {
-          this.addScore(500);
-          this.win();
-          return;
-        }
-        this.setLevel(this.level + 1);
+      if (this.level >= MAX_LEVEL) {
+        this.addScore(500);
+        this.win();
+        return;
       }
-      this.startLevel();
+      const completed = this.level;
+      this.showLevelSplash(completed, () => {
+        this.setLevel(completed + 1);
+        this.startLevel();
+        this.startAttempt();
+      });
+      return;
     }
     this.startAttempt();
   }
 
   update(_time: number, delta: number) {
-    if (this.paused || this.isOver) return;
+    if (this.paused || this.isOver || this.splashActive) return;
     const dt = delta / 1000;
 
     if (this.phase === "running") {
       this.andrea.x += this.runSpeed * dt;
-      if (this.andrea.x > this.sweetCenter + 80) {
-        // Ran past without jumping
-        this.launch(false);
+      if (this.andrea.x > this.sweetCenter + this.cfg().sweetZoneW / 2 + 60) {
+        this.stumble();
       }
     } else if (this.phase === "jumping") {
       this.jumpTime += delta;
@@ -324,11 +335,20 @@ export class TrampettScene extends BaseGameScene {
       const x = Phaser.Math.Linear(this.jumpStartX, 1050, t);
       const h = Math.sin(t * Math.PI) * this.jumpMaxH;
       this.andrea.setPosition(x, this.scale.height - 140 - h);
-      const rotSpeed = 0.35 + this.trickProgress * 0.12;
-      this.andrea.setRotation(this.andrea.rotation + rotSpeed * dt * Math.PI);
+
+      if (this.leftKey.isDown) this.omega -= ROT_ACCEL * dt;
+      if (this.rightKey.isDown) this.omega += ROT_ACCEL * dt;
+      if (this.downKey.isDown) this.omega *= Math.exp(-BRAKE_PER_SEC * dt);
+      if (this.omega > MAX_OMEGA) this.omega = MAX_OMEGA;
+      if (this.omega < -MAX_OMEGA) this.omega = -MAX_OMEGA;
+
+      const dRot = this.omega * dt;
+      this.andrea.setRotation(this.andrea.rotation + dRot);
+      this.totalAbsRot += Math.abs(dRot);
+      this.updateTrickLabel();
+
       if (t >= 1) {
-        this.andrea.setRotation(0);
-        this.judge(true, this.trickProgress, this.trickSeq.length);
+        this.judgeLanding();
       }
     }
   }

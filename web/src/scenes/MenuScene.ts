@@ -39,7 +39,7 @@ export class MenuScene extends Phaser.Scene {
     addSakuraBackground(this, 18);
 
     this.add
-      .text(width / 2, 60, "🌸 Andreas Arkade 🌸", {
+      .text(width / 2, 60, "🌸 Andrea's Arkade 🌸", {
         fontFamily: Theme.font,
         fontSize: "56px",
         color: colorHex(Theme.colors.accent),

@@ -18,6 +18,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
   protected lives = 3;
   protected paused = false;
   protected isOver = false;
+  protected splashActive = false;
 
   private hudText?: Phaser.GameObjects.Text;
   private pauseOverlay?: Phaser.GameObjects.Container;
@@ -32,6 +33,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.lives = 3;
     this.paused = false;
     this.isOver = false;
+    this.splashActive = false;
   }
 
   protected hudBottomY = 46;
@@ -73,11 +75,13 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-P", () => this.togglePause());
   }
 
+  protected showLives = true;
+
   protected refreshHud() {
     if (!this.hudText) return;
-    const hjerter = "❤️".repeat(Math.max(0, this.lives));
+    const hjerter = this.showLives ? "❤️".repeat(Math.max(0, this.lives)) : "";
     this.hudText.setText(
-      `${this.emoji} ${this.gameNavn}   Nivå ${this.level}/${MAX_LEVEL}   Poeng ${Math.round(this.score)}   ${hjerter}   [P] pause`,
+      `${this.emoji} ${this.gameNavn}   Nivå ${this.level}/${MAX_LEVEL}   Poeng ${Math.round(this.score)}${hjerter ? "   " + hjerter : ""}   [P] pause`,
     );
   }
 
@@ -187,5 +191,53 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
   protected win(finalScore?: number) {
     this.gameOver(finalScore);
+  }
+
+  protected showLevelSplash(
+    completedLevel: number,
+    onDone: () => void,
+    nextHint?: string,
+  ) {
+    if (this.isOver) {
+      onDone();
+      return;
+    }
+    this.splashActive = true;
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const c = this.add.container(w / 2, h / 2).setDepth(1500).setScrollFactor(0);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.55);
+    bg.fillRect(-w, -h, w * 2, h * 2);
+    const panel = this.add.graphics();
+    panel.fillStyle(Theme.colors.panel, 0.95);
+    panel.fillRoundedRect(-300, -110, 600, 220, 22);
+    panel.lineStyle(3, Theme.colors.accent, 1);
+    panel.strokeRoundedRect(-300, -110, 600, 220, 22);
+    const title = makeText(this, 0, -40, `🎉 Nivå ${completedLevel} fullført!`, 44).setColor(
+      "#ffb7dd",
+    );
+    const sub = makeText(
+      this,
+      0,
+      40,
+      nextHint ?? `Neste: nivå ${completedLevel + 1} ${this.emoji}`,
+      24,
+    );
+    c.add([bg, panel, title, sub]);
+    c.setAlpha(0);
+    this.tweens.add({ targets: c, alpha: 1, duration: 160, ease: "Cubic.easeOut" });
+    this.time.delayedCall(1500, () => {
+      this.tweens.add({
+        targets: c,
+        alpha: 0,
+        duration: 200,
+        onComplete: () => {
+          c.destroy();
+          this.splashActive = false;
+          onDone();
+        },
+      });
+    });
   }
 }

@@ -44,6 +44,30 @@ X-GNOME-Autostart-enabled=true
 
 Trykk `F11` for fullskjerm manuelt hvis kiosk-flagget ikke virker.
 
+## Oppdater til nyeste versjon på Raspberry Pi
+
+Hvis prosjektet ble klonet med `git` på Pi-en:
+
+```bash
+cd arcade
+git pull
+docker compose up -d --build
+```
+
+Dette bygger image på nytt med siste kode og restarter containeren. Highscore-databasen beholdes fordi SQLite-filen ligger i Docker-volumet `arcade-data`.
+
+Hvis prosjektet ble kopiert til Pi-en med `scp` i stedet for `git`, kopier inn oppdatert prosjektmappe på nytt og kjør:
+
+```bash
+docker compose up -d --build
+```
+
+Hvis du vil rydde bort gamle images etter flere oppdateringer, kan du i tillegg kjøre:
+
+```bash
+docker image prune -f
+```
+
 ## Legg til et nytt spill
 
 1. Lag `web/src/games/<navn>/` med en `<Navn>Scene.ts` og `index.ts` som eksporterer et `GameModule`.

@@ -25,7 +25,6 @@ export class KaiserScene extends BaseGameScene {
   private speedUntil = 0;
   private invulnUntil = 0;
   private baseSpeed = 220;
-  private splashActive = false;
   private stuckTime = 0;
   private lastKX = 0;
   private lastKY = 0;
@@ -318,51 +317,6 @@ export class KaiserScene extends BaseGameScene {
         this.startLevel();
       });
     }
-  }
-
-  private showLevelSplash(completedLevel: number, onDone: () => void) {
-    this.splashActive = true;
-    const w = this.scale.width;
-    const h = this.scale.height;
-    const c = this.add.container(w / 2, h / 2).setDepth(1500).setScrollFactor(0);
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.55);
-    bg.fillRect(-w, -h, w * 2, h * 2);
-    const panel = this.add.graphics();
-    panel.fillStyle(Theme.colors.panel, 0.95);
-    panel.fillRoundedRect(-300, -110, 600, 220, 22);
-    panel.lineStyle(3, Theme.colors.accent, 1);
-    panel.strokeRoundedRect(-300, -110, 600, 220, 22);
-    const title = this.add
-      .text(0, -40, `🎉 Nivå ${completedLevel} fullført!`, {
-        fontFamily: Theme.font,
-        fontSize: "44px",
-        color: "#ffb7dd",
-        fontStyle: "900",
-      })
-      .setOrigin(0.5);
-    const sub = this.add
-      .text(0, 40, `Neste: nivå ${completedLevel + 1} 🐕`, {
-        fontFamily: Theme.font,
-        fontSize: "24px",
-        color: "#fff",
-      })
-      .setOrigin(0.5);
-    c.add([bg, panel, title, sub]);
-    c.setAlpha(0);
-    this.tweens.add({ targets: c, alpha: 1, duration: 160, ease: "Cubic.easeOut" });
-    this.time.delayedCall(1500, () => {
-      this.tweens.add({
-        targets: c,
-        alpha: 0,
-        duration: 200,
-        onComplete: () => {
-          c.destroy();
-          this.splashActive = false;
-          onDone();
-        },
-      });
-    });
   }
 
   private hitsObstacle(x: number, y: number, r: number): boolean {

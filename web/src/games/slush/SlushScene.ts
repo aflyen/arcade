@@ -46,6 +46,10 @@ export class SlushScene extends BaseGameScene {
   private missesPerLife = 5;
   private statusText!: Phaser.GameObjects.Text;
   private progressText!: Phaser.GameObjects.Text;
+  private cupFill!: Phaser.GameObjects.Graphics;
+  private displayFillRatio = 0;
+  private lastCatchColor = 0x9b6dff;
+  private advancing = false;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private leftKey!: Phaser.Input.Keyboard.Key;
   private rightKey!: Phaser.Input.Keyboard.Key;
@@ -96,9 +100,14 @@ export class SlushScene extends BaseGameScene {
     const cup = this.add.graphics();
     cup.fillStyle(0xe8d5f0, 0.95);
     cup.fillRoundedRect(-this.cupWidth / 2, -60, this.cupWidth, 120, 10);
-    cup.lineStyle(3, 0xffffff, 1);
-    cup.strokeRoundedRect(-this.cupWidth / 2, -60, this.cupWidth, 120, 10);
+    this.cupFill = this.add.graphics();
     this.beger.add(cup);
+    this.beger.add(this.cupFill);
+    const cupOutline = this.add.graphics();
+    cupOutline.lineStyle(3, 0xffffff, 1);
+    cupOutline.strokeRoundedRect(-this.cupWidth / 2, -60, this.cupWidth, 120, 10);
+    this.beger.add(cupOutline);
+    this.redrawCupFill();
 
     this.statusText = this.add
       .text(width / 2, this.hudBottomY + 10, "", {
@@ -142,9 +151,26 @@ export class SlushScene extends BaseGameScene {
     this.drops = [];
     this.catchTarget = 12 + this.level * 3;
     this.levelStartTime = this.time.now;
+    this.tweens.killTweensOf(this);
+    this.displayFillRatio = 0;
+    this.redrawCupFill();
     this.pickNextActive();
     this.spawnAt = this.time.now + 250;
     this.cameras.main.flash(200, 180, 220, 255);
+  }
+
+  private redrawCupFill() {
+    const g = this.cupFill;
+    g.clear();
+    const inset = 4;
+    const w = this.cupWidth - inset * 2;
+    const innerH = 120 - inset * 2;
+    const h = innerH * Phaser.Math.Clamp(this.displayFillRatio, 0, 1);
+    if (h <= 0.5) return;
+    g.fillStyle(this.lastCatchColor, 0.85);
+    g.fillRoundedRect(-w / 2, 60 - inset - h, w, h, 6);
+    g.fillStyle(0xffffff, 0.35);
+    g.fillEllipse(0, 60 - inset - h + 3, w * 0.85, 6);
   }
 
   private pickNextActive() {
@@ -184,7 +210,7 @@ export class SlushScene extends BaseGameScene {
   }
 
   update(_time: number, delta: number) {
-    if (this.paused || this.isOver) return;
+    if (this.paused || this.isOver || this.splashActive) return;
     const dt = delta / 1000;
     const now = this.time.now;
 
@@ -263,22 +289,45 @@ export class SlushScene extends BaseGameScene {
   }
 
   private onCatch(drop: Drop) {
+    if (this.advancing) return;
     this.caught += 1;
+    this.lastCatchColor = drop.color;
     this.addScore(20 * this.level);
     this.spawnCatchParticles(drop.x, this.cupTopY, drop.color);
     this.refreshProgress();
+
+    const targetRatio = Math.min(1, this.caught / this.catchTarget);
+    this.tweens.killTweensOf(this);
+    this.tweens.add({
+      targets: this,
+      displayFillRatio: targetRatio,
+      duration: 220,
+      ease: "Cubic.easeOut",
+      onUpdate: () => this.redrawCupFill(),
+    });
+
     if (this.caught >= this.catchTarget) {
+      this.advancing = true;
       this.addScore(150 * this.level);
       this.cameras.main.flash(250, 180, 255, 220);
       if (this.level >= MAX_LEVEL) {
-        this.addScore(500);
-        this.win();
+        this.time.delayedCall(900, () => {
+          this.advancing = false;
+          this.addScore(500);
+          this.win();
+        });
         return;
       }
-      this.setLevel(this.level + 1);
-      this.startLevel();
-      this.refreshStatus();
-      this.refreshProgress();
+      const completed = this.level;
+      this.time.delayedCall(700, () => {
+        this.showLevelSplash(completed, () => {
+          this.advancing = false;
+          this.setLevel(completed + 1);
+          this.startLevel();
+          this.refreshStatus();
+          this.refreshProgress();
+        });
+      });
     }
   }
 
