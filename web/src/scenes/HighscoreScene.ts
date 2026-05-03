@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { Theme, colorHex } from "../core/Theme.js";
-import { makeButton, makeText, addSakuraBackground } from "../core/ui.js";
+import { makeButton, makeText, addSakuraBackground, autoReturnToMenu } from "../core/ui.js";
 import { fetchTop } from "../core/HighscoreClient.js";
 
 type Data = { gameId: string; gameNavn: string; emoji: string; highlightName?: string };
@@ -72,5 +72,7 @@ export class HighscoreScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-ESC", () => this.scene.start("MenuScene"));
     this.input.keyboard?.on("keydown-ENTER", () => this.scene.start("MenuScene"));
     this.input.keyboard?.on("keydown-SPACE", () => this.scene.start("MenuScene"));
+
+    autoReturnToMenu(this, 60);
   }
 }

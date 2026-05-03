@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { GAME_REGISTRY } from "../core/GameRegistry.js";
 import { fetchTop, type ScoreEntry } from "../core/HighscoreClient.js";
 import { Theme, colorHex } from "../core/Theme.js";
-import { addSakuraBackground, makeButton, makePanel, makeText, type Button } from "../core/ui.js";
+import { addSakuraBackground, autoReturnToMenu, makeButton, makePanel, makeText, type Button } from "../core/ui.js";
 
 type HighscoreFocus = "tabs" | "menu";
 
@@ -65,6 +65,7 @@ export class AllHighscoresScene extends Phaser.Scene {
 
     this.renderSelected();
     this.game.canvas.focus?.();
+    autoReturnToMenu(this, 60);
   }
 
   private buildTabs() {
@@ -154,8 +155,8 @@ export class AllHighscoresScene extends Phaser.Scene {
 
   private renderRows(rows: ScoreEntry[]) {
     const { width } = this.scale;
-    const startY = 275;
-    const rowH = 34;
+    const startY = 268;
+    const rowH = 32;
 
     rows.forEach((row, i) => {
       const y = startY + i * rowH;
