@@ -65,7 +65,7 @@ Fullført nivå: `200 × level + (tid igjen × 10 × level)` poeng. Siste nivå 
 Arcade-catcher i slush-kiosk. Slushdråper i forskjellige farger faller automatisk fra aktive maskiner. Spilleren flytter begeret med **mus / A,D / ←,→** for å fange dråpene. Mål per nivå er `catchTarget` fanger; 150 × level bonus + 20 × level per fanget. Nok bom på gulvet → mister liv (3 totalt). Siste nivå: +500 vinnerbonus.
 
 ### Trampett-Triks 🤸 (`trampett`)
-Rytme/timing. Andrea løper mot trampetten; **SPACE i den grønne sonen** gir hopp. I lufta brukes **←/→** for å rotere saltoen og **↓** for å bremse før landing. Juryen gir poeng basert på landing og halvspinn:
+Rytme/timing. Andrea løper mot trampetten; **SPACE i den grønne sonen** gir hopp. I lufta brukes **→** for salto, **←** for backflip og **↓** for å bremse før landing. Nivå-splashen viser målet: salto, backflip, dobbel salto, dobbel backflip og trippel salto. Én godkjent landing med måltrikset eller bedre går direkte til neste nivå. Juryen gir poeng basert på landing og halvspinn i riktig retning; feil rotasjonsvei gir 0 poeng:
 - Bommet/ingen input: 5p
 - Delvis: `30 + halves × 20`
 - Perfekt landing med nok rotasjon: opp mot `100 × level + halves × 50`, ellers `60 × level + halves × 30`
