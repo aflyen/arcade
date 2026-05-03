@@ -89,6 +89,45 @@ sudo reboot
 
 Etter reboot skal Docker-containeren starte av seg selv, Chromium åpne `http://localhost:3000`, og menyen gå til attract mode etter 60 sekunder uten input. Trykk `F11` for fullskjerm manuelt hvis kiosk-flagget ikke virker.
 
+### Valgfritt: skrivebordsikon for å starte Chromium på nytt
+
+Hvis Chromium blir lukket under bruk, kan det være praktisk med et ikon på skrivebordet som starter nettleseren på nytt med samme kiosk-parametre.
+
+Lag en `.desktop`-fil:
+
+```bash
+nano ~/Desktop/Start-Arcade.desktop
+```
+
+Legg inn dette:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Start Arcade
+Comment=Restart arcade browser in kiosk mode
+Exec=chromium --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=Translate --disable-translate --autoplay-policy=no-user-gesture-required --password-store=basic --incognito http://localhost:3000
+Terminal=false
+Icon=chromium
+Categories=Game;
+```
+
+Gjør filen kjørbar og marker den som trygg:
+
+```bash
+chmod +x ~/Desktop/Start-Arcade.desktop
+gio set ~/Desktop/Start-Arcade.desktop metadata::trusted true
+```
+
+Hvis Raspberry Pi OS fortsatt viser en popup, høyreklikk ikonet og velg **Allow Launching** / **Trust this executable**. På noen skrivebordsmiljøer må man fortsatt velge **Execute** første gang.
+
+Hvis `chromium` ikke finnes på Pi-en, sjekk kommandoen og bytt `Exec=`-linjen til riktig binær:
+
+```bash
+which chromium
+which chromium-browser
+```
+
 ## Oppdater til nyeste versjon på Raspberry Pi
 
 Hvis prosjektet ble klonet med `git` på Pi-en:
