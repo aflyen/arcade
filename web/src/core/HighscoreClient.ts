@@ -11,6 +11,12 @@ export type SubmitResult = {
   isTop10: boolean;
 };
 
+export type ResetResult = {
+  ok: boolean;
+  deleted: number;
+  error?: string;
+};
+
 export async function fetchTop(gameId: string): Promise<ScoreEntry[]> {
   try {
     const res = await fetch(`/api/highscores/${encodeURIComponent(gameId)}`);
@@ -44,4 +50,31 @@ export async function checkIfTop10(gameId: string, score: number): Promise<boole
   if (top.length < 10) return score > 0;
   const last = top[top.length - 1];
   return score > last.score;
+}
+
+export async function resetScores(gameId: string | "all", pin: string): Promise<ResetResult> {
+  const url = gameId === "all"
+    ? "/api/highscores"
+    : `/api/highscores/${encodeURIComponent(gameId)}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { "x-admin-pin": pin },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        ok: false,
+        deleted: 0,
+        error: typeof body.error === "string" ? body.error : "Kunne ikke nullstille",
+      };
+    }
+    return {
+      ok: true,
+      deleted: typeof body.deleted === "number" ? body.deleted : 0,
+    };
+  } catch {
+    return { ok: false, deleted: 0, error: "Ingen kontakt med server" };
+  }
 }

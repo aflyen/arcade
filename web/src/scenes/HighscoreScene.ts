@@ -58,7 +58,7 @@ export class HighscoreScene extends Phaser.Scene {
       });
     }
 
-    makeButton(
+    const menuButton = makeButton(
       this,
       width / 2,
       height - 80,
@@ -68,7 +68,9 @@ export class HighscoreScene extends Phaser.Scene {
       () => this.scene.start("MenuScene"),
       Theme.colors.panelLight,
     );
+    menuButton.setFocused(true);
     this.input.keyboard?.on("keydown-ESC", () => this.scene.start("MenuScene"));
     this.input.keyboard?.on("keydown-ENTER", () => this.scene.start("MenuScene"));
+    this.input.keyboard?.on("keydown-SPACE", () => this.scene.start("MenuScene"));
   }
 }

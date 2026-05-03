@@ -44,6 +44,12 @@ const rankStmt = db.prepare<[string, number], { cnt: number }>(
   `SELECT COUNT(*) AS cnt FROM scores WHERE game_id = ? AND score > ?`,
 );
 
+const deleteGameStmt = db.prepare<[string]>(
+  `DELETE FROM scores WHERE game_id = ?`,
+);
+
+const deleteAllStmt = db.prepare(`DELETE FROM scores`);
+
 export function getTop(gameId: string): ScoreRow[] {
   return topStmt.all(gameId);
 }
@@ -57,4 +63,12 @@ export function insertScore(gameId: string, name: string, score: number): {
   const betterCount = rankStmt.get(gameId, score)?.cnt ?? 0;
   const rank = betterCount + 1;
   return { id: info.lastInsertRowid, rank, isTop10: rank <= 10 };
+}
+
+export function deleteScoresForGame(gameId: string): number {
+  return deleteGameStmt.run(gameId).changes;
+}
+
+export function deleteAllScores(): number {
+  return deleteAllStmt.run().changes;
 }

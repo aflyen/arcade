@@ -23,6 +23,13 @@ export abstract class BaseGameScene extends Phaser.Scene {
   private hudText?: Phaser.GameObjects.Text;
   private pauseOverlay?: Phaser.GameObjects.Container;
   private confirmOverlay?: Phaser.GameObjects.Container;
+  private abortSelection = 1;
+  private abortHandlers?: {
+    left: () => void;
+    right: () => void;
+    enter: () => void;
+    escape: () => void;
+  };
 
   init(data: SceneStartData) {
     this.gameId = data.gameId;
@@ -142,6 +149,12 @@ export abstract class BaseGameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     const nei = makeText(this, 140, 60, "Fortsett (P)", 22, Theme.colors.accent2)
       .setInteractive({ useHandCursor: true });
+    const updateSelection = () => {
+      ja.setScale(this.abortSelection === 0 ? 1.12 : 1);
+      nei.setScale(this.abortSelection === 1 ? 1.12 : 1);
+      ja.setColor(colorHex(this.abortSelection === 0 ? Theme.colors.accent3 : Theme.colors.red));
+      nei.setColor(colorHex(this.abortSelection === 1 ? Theme.colors.accent3 : Theme.colors.accent2));
+    };
     c.add([bg, panel, title, sub, ja, nei]);
     if (!this.paused) {
       this.physics.world.pause();
@@ -152,6 +165,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
       this.scene.start("MenuScene");
     });
     const close = () => {
+      this.removeAbortHandlers();
       c.destroy();
       this.confirmOverlay = undefined;
       if (!this.paused) {
@@ -161,7 +175,54 @@ export abstract class BaseGameScene extends Phaser.Scene {
       }
     };
     nei.on("pointerdown", close);
+    ja.on("pointerover", () => {
+      this.abortSelection = 0;
+      updateSelection();
+    });
+    nei.on("pointerover", () => {
+      this.abortSelection = 1;
+      updateSelection();
+    });
+    this.abortSelection = 1;
+    this.abortHandlers = {
+      left: () => {
+        this.abortSelection = 0;
+        updateSelection();
+      },
+      right: () => {
+        this.abortSelection = 1;
+        updateSelection();
+      },
+      enter: () => {
+        if (this.abortSelection === 0) {
+          this.scene.start("MenuScene");
+        } else {
+          close();
+        }
+      },
+      escape: close,
+    };
+    this.input.keyboard?.on("keydown-LEFT", this.abortHandlers.left);
+    this.input.keyboard?.on("keydown-A", this.abortHandlers.left);
+    this.input.keyboard?.on("keydown-RIGHT", this.abortHandlers.right);
+    this.input.keyboard?.on("keydown-D", this.abortHandlers.right);
+    this.input.keyboard?.on("keydown-ENTER", this.abortHandlers.enter);
+    this.input.keyboard?.on("keydown-SPACE", this.abortHandlers.enter);
+    this.input.keyboard?.on("keydown-ESC", this.abortHandlers.escape);
+    updateSelection();
     this.confirmOverlay = c;
+  }
+
+  private removeAbortHandlers() {
+    if (!this.abortHandlers) return;
+    this.input.keyboard?.off("keydown-LEFT", this.abortHandlers.left);
+    this.input.keyboard?.off("keydown-A", this.abortHandlers.left);
+    this.input.keyboard?.off("keydown-RIGHT", this.abortHandlers.right);
+    this.input.keyboard?.off("keydown-D", this.abortHandlers.right);
+    this.input.keyboard?.off("keydown-ENTER", this.abortHandlers.enter);
+    this.input.keyboard?.off("keydown-SPACE", this.abortHandlers.enter);
+    this.input.keyboard?.off("keydown-ESC", this.abortHandlers.escape);
+    this.abortHandlers = undefined;
   }
 
   private buildOverlay(title: string, subtitle: string): Phaser.GameObjects.Container {
