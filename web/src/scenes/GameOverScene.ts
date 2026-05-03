@@ -31,56 +31,48 @@ export class GameOverScene extends Phaser.Scene {
     const isTop10 = await checkIfTop10(data.gameId, data.score);
     loading.destroy();
 
-    const kb = this.input.keyboard!;
-
     if (isTop10 && data.score > 0) {
-      makeText(this, width / 2, 400, "🏆 Du er topp 10!", 32, Theme.colors.accent2, "900");
-      const openNameEntry = () =>
-        this.scene.start("NameEntryScene", {
-          gameId: data.gameId,
-          gameNavn: data.gameNavn,
-          emoji: data.emoji,
-          score: data.score,
-        });
-      this.buttons.push(
-        makeButton(this, width / 2, height - 140, 380, 80, "Skriv inn navnet ditt →", openNameEntry, Theme.colors.pink),
-      );
-      kb.on("keydown-ENTER", openNameEntry);
-      kb.on("keydown-SPACE", openNameEntry);
-      kb.on("keydown-ESC", () => this.scene.start("MenuScene"));
-    } else {
-      makeText(
-        this,
-        width / 2,
-        400,
-        "Prøv igjen — neste gang blir du topp 10!",
-        22,
-        Theme.colors.textDim,
-      );
-      const retry = () =>
-        this.scene.start("StoryScene", {
-          gameId: data.gameId,
-          gameNavn: data.gameNavn,
-          emoji: data.emoji,
-          historie: "En ny sjanse venter!",
-          kontroller: "Samme som sist.",
-          sceneKey: sceneKeyFor(data.gameId),
-        });
-      const meny = () => this.scene.start("MenuScene");
-      this.buttons.push(
-        makeButton(this, width / 2 - 140, height - 140, 240, 70, "Spill igjen", retry, Theme.colors.accent2),
-      );
-      this.buttons.push(
-        makeButton(this, width / 2 + 140, height - 140, 240, 70, "← Meny", meny, Theme.colors.panelLight),
-      );
-      kb.on("keydown-LEFT", () => this.move(-1));
-      kb.on("keydown-RIGHT", () => this.move(1));
-      kb.on("keydown-A", () => this.move(-1));
-      kb.on("keydown-D", () => this.move(1));
-      kb.on("keydown-ENTER", () => this.buttons[this.selected]?.click());
-      kb.on("keydown-SPACE", () => this.buttons[this.selected]?.click());
-      kb.on("keydown-ESC", meny);
+      this.scene.start("NameEntryScene", {
+        gameId: data.gameId,
+        gameNavn: data.gameNavn,
+        emoji: data.emoji,
+        score: data.score,
+      });
+      return;
     }
+
+    const kb = this.input.keyboard!;
+    makeText(
+      this,
+      width / 2,
+      400,
+      "Prøv igjen — neste gang blir du topp 10!",
+      22,
+      Theme.colors.textDim,
+    );
+    const retry = () =>
+      this.scene.start("StoryScene", {
+        gameId: data.gameId,
+        gameNavn: data.gameNavn,
+        emoji: data.emoji,
+        historie: "En ny sjanse venter!",
+        kontroller: "Samme som sist.",
+        sceneKey: sceneKeyFor(data.gameId),
+      });
+    const meny = () => this.scene.start("MenuScene");
+    this.buttons.push(
+      makeButton(this, width / 2 - 140, height - 140, 240, 70, "Spill igjen", retry, Theme.colors.accent2),
+    );
+    this.buttons.push(
+      makeButton(this, width / 2 + 140, height - 140, 240, 70, "← Meny", meny, Theme.colors.panelLight),
+    );
+    kb.on("keydown-LEFT", () => this.move(-1));
+    kb.on("keydown-RIGHT", () => this.move(1));
+    kb.on("keydown-A", () => this.move(-1));
+    kb.on("keydown-D", () => this.move(1));
+    kb.on("keydown-ENTER", () => this.buttons[this.selected]?.click());
+    kb.on("keydown-SPACE", () => this.buttons[this.selected]?.click());
+    kb.on("keydown-ESC", meny);
 
     this.buttons.forEach((b, i) => {
       b.rect.on("pointerover", () => {
