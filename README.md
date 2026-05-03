@@ -30,9 +30,27 @@ SQLite-filen lagres i volumet `arcade-data` (`/data/arcade.db` inne i containere
 ## Deploy på Raspberry Pi 5
 
 1. Installer Docker og docker-compose på Pi-en.
-2. `git clone` eller `scp` dette prosjektet til Pi-en.
-3. `docker compose up -d --build` (første bygg tar noen minutter).
-4. Sjekk at containeren kjører og starter automatisk etter reboot:
+2. Installer emoji-fonten som Chromium trenger for ikonene i spillet:
+
+```bash
+sudo apt update
+sudo apt install -y fonts-noto-color-emoji
+fc-cache -f
+```
+
+Ikonene i spillet er emoji-tegn som tegnes av nettleseren. Windows har en emoji-font innebygd, mens Raspberry Pi OS ofte mangler dette som standard. Uten `fonts-noto-color-emoji` kan ikonene bli blanke eller vises som firkanter i Chromium.
+
+Verifiser at fonten er installert:
+
+```bash
+fc-match "Noto Color Emoji"
+```
+
+Forventet output skal nevne `NotoColorEmoji.ttf`. Logg ut/inn eller reboot etter installasjonen hvis Chromium allerede kjører. Merk at emoji kan se litt annerledes ut på Pi enn på Windows, fordi de bruker forskjellige emoji-fonter.
+
+3. `git clone` eller `scp` dette prosjektet til Pi-en.
+4. `docker compose up -d --build` (første bygg tar noen minutter).
+5. Sjekk at containeren kjører og starter automatisk etter reboot:
 
 ```bash
 docker compose ps
@@ -41,36 +59,27 @@ docker inspect arcade --format '{{.HostConfig.RestartPolicy.Name}}'
 
 `docker-compose.yml` bruker `restart: unless-stopped`, så spillet starter igjen etter reboot så lenge containeren ikke er stoppet manuelt.
 
-5. Slå av skjermsparing/blanking for Pi-brukeren:
+6. Start Chromium i kiosk-mode for Pi-brukeren. Dette starter Chromium etter at det grafiske skrivebordet har logget inn.
+
+Lag autostart-mappen og åpne en ny `.desktop`-fil:
 
 ```bash
-mkdir -p ~/.config/lxsession/LXDE-pi
-nano ~/.config/lxsession/LXDE-pi/autostart
+mkdir -p ~/.config/autostart
+nano ~/.config/autostart/arcade.desktop
 ```
 
-Legg inn disse linjene:
-
-```text
-@xset s off
-@xset -dpms
-@xset s noblank
-```
-
-6. Start Chromium i kiosk-mode. Lag `~/.config/autostart/arcade.desktop`:
+Legg inn dette:
 
 ```ini
 [Desktop Entry]
 Type=Application
 Name=Arkade
-Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=Translate --autoplay-policy=no-user-gesture-required --incognito http://localhost:3000
+Exec=chromium --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=Translate --disable-translate --autoplay-policy=no-user-gesture-required --password-store=basic --incognito http://localhost:3000
+Terminal=false
 X-GNOME-Autostart-enabled=true
 ```
 
-Hvis Chromium ikke starter fra autostart på din Pi OS-versjon, legg samme kommando direkte i `~/.config/lxsession/LXDE-pi/autostart`:
-
-```text
-@chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=Translate --autoplay-policy=no-user-gesture-required --incognito http://localhost:3000
-```
+`--password-store=basic` hindrer Chromium i å spørre etter nøkkelring-passord ved kiosk-oppstart. `--disable-features=Translate --disable-translate` er ekstra vern mot oversettelsesdialogen når spillet blander norsk og engelsk tekst. Selve nettsiden er også merket med `notranslate`, så Chromium ikke skal tilby oversettelse av arkaden.
 
 7. Reboot og test:
 
@@ -78,7 +87,7 @@ Hvis Chromium ikke starter fra autostart på din Pi OS-versjon, legg samme komma
 sudo reboot
 ```
 
-Etter reboot skal Docker-containeren starte av seg selv, Chromium åpne `http://localhost:3000`, skjermen holde seg våken, og menyen gå til attract mode etter 60 sekunder uten input. Trykk `F11` for fullskjerm manuelt hvis kiosk-flagget ikke virker.
+Etter reboot skal Docker-containeren starte av seg selv, Chromium åpne `http://localhost:3000`, og menyen gå til attract mode etter 60 sekunder uten input. Trykk `F11` for fullskjerm manuelt hvis kiosk-flagget ikke virker.
 
 ## Oppdater til nyeste versjon på Raspberry Pi
 
