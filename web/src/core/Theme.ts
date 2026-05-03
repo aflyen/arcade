@@ -27,7 +27,7 @@ const colors: Colors = {
 
 export const Theme = {
   colors,
-  font: '"Zen Maru Gothic", system-ui, sans-serif',
+  font: '"Zen Maru Gothic", system-ui, "Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji", sans-serif',
   palette: {
     bgCss: "#1a0f1f",
     panelCss: "#3a2550",
