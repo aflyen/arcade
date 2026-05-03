@@ -8,6 +8,7 @@ import { NameEntryScene } from "./scenes/NameEntryScene.js";
 import { HighscoreScene } from "./scenes/HighscoreScene.js";
 import { AllHighscoresScene } from "./scenes/AllHighscoresScene.js";
 import { AdminScene } from "./scenes/AdminScene.js";
+import { AttractScene } from "./scenes/AttractScene.js";
 import { GAME_REGISTRY } from "./core/GameRegistry.js";
 
 const gameScenes = GAME_REGISTRY.map((m) => m.SceneClass);
@@ -35,6 +36,7 @@ new Phaser.Game({
     HighscoreScene,
     AllHighscoresScene,
     AdminScene,
+    AttractScene,
     ...gameScenes,
   ],
 });
