@@ -3,6 +3,8 @@ import { Theme, colorHex } from "./Theme.js";
 import { MAX_LEVEL } from "./LevelCurve.js";
 import { makeText } from "./ui.js";
 
+const GAME_IDLE_RETURN_MS = 60_000;
+
 export type SceneStartData = {
   gameId: string;
   gameNavn: string;
@@ -23,6 +25,7 @@ export abstract class BaseGameScene extends Phaser.Scene {
   private hudText?: Phaser.GameObjects.Text;
   private pauseOverlay?: Phaser.GameObjects.Container;
   private confirmOverlay?: Phaser.GameObjects.Container;
+  private idleReturnTimer?: ReturnType<typeof window.setTimeout>;
   private abortSelection = 1;
   private abortHandlers?: {
     left: () => void;
@@ -80,6 +83,8 @@ export abstract class BaseGameScene extends Phaser.Scene {
 
     this.input.keyboard?.on("keydown-ESC", () => this.askAbort());
     this.input.keyboard?.on("keydown-P", () => this.togglePause());
+
+    this.startIdleReturnTimer();
   }
 
   protected showLives = true;
@@ -223,6 +228,36 @@ export abstract class BaseGameScene extends Phaser.Scene {
     this.input.keyboard?.off("keydown-SPACE", this.abortHandlers.enter);
     this.input.keyboard?.off("keydown-ESC", this.abortHandlers.escape);
     this.abortHandlers = undefined;
+  }
+
+  private startIdleReturnTimer() {
+    this.cleanupIdleReturnTimer();
+    this.input.on("pointerdown", this.resetIdleReturnTimer, this);
+    this.input.on("pointermove", this.resetIdleReturnTimer, this);
+    this.input.keyboard?.on("keydown", this.resetIdleReturnTimer, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanupIdleReturnTimer());
+    this.resetIdleReturnTimer();
+  }
+
+  private resetIdleReturnTimer() {
+    if (this.idleReturnTimer) {
+      window.clearTimeout(this.idleReturnTimer);
+    }
+    this.idleReturnTimer = window.setTimeout(() => {
+      if (this.scene.isActive()) {
+        this.scene.start("MenuScene");
+      }
+    }, GAME_IDLE_RETURN_MS);
+  }
+
+  private cleanupIdleReturnTimer() {
+    if (this.idleReturnTimer) {
+      window.clearTimeout(this.idleReturnTimer);
+      this.idleReturnTimer = undefined;
+    }
+    this.input.off("pointerdown", this.resetIdleReturnTimer, this);
+    this.input.off("pointermove", this.resetIdleReturnTimer, this);
+    this.input.keyboard?.off("keydown", this.resetIdleReturnTimer, this);
   }
 
   private buildOverlay(title: string, subtitle: string): Phaser.GameObjects.Container {
