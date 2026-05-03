@@ -8,8 +8,8 @@ export const slushModule: GameModule = {
   undertittel: "Fyll ordrer uten å søle!",
   historie:
     "Sommerkøen i slush-kiosken er hysterisk lang 🫠. Andrea må fylle hver ordre med riktig fargekombinasjon — og UTEN å søle!\n" +
-    "Trykk mellomrom eller venstre musknapp for å tappe fra maskinen rett over begeret. Pass på at du ikke fyller på mer enn ordren ber om.",
-  kontroller: "Mus eller A/D eller ←/→ for å flytte begeret. SPACE eller venstreklikk for å tappe.",
+    "Flytt begeret under de aktive maskinene for å fange slushdråpene. Pass på at dråpene ikke treffer gulvet.",
+  kontroller: "Mus eller A/D eller ←/→ for å flytte begeret.",
   SceneClass: SlushScene,
   sceneKey: "SlushScene",
 };

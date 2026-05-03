@@ -3,14 +3,14 @@ import { BaseGameScene } from "../../core/BaseGameScene.js";
 import { Theme } from "../../core/Theme.js";
 import { MAX_LEVEL, difficulty } from "../../core/LevelCurve.js";
 
-type Flavor = { color: number; emoji: string };
+type Flavor = { color: number; emoji: string; fruit: string };
 
 const FLAVORS: Flavor[] = [
-  { color: 0x4fc3f7, emoji: "🔵" },
-  { color: 0xff5b8a, emoji: "🔴" },
-  { color: 0x7cffbc, emoji: "🟢" },
-  { color: 0xfbe5a4, emoji: "🟡" },
-  { color: 0xcdb4f6, emoji: "🟣" },
+  { color: 0x4fc3f7, emoji: "🔵", fruit: "🫐" },
+  { color: 0xff5b8a, emoji: "🔴", fruit: "🍓" },
+  { color: 0x7cffbc, emoji: "🟢", fruit: "🍏" },
+  { color: 0xfbe5a4, emoji: "🟡", fruit: "🍋" },
+  { color: 0xcdb4f6, emoji: "🟣", fruit: "🍇" },
 ];
 
 type Machine = {
@@ -44,7 +44,6 @@ export class SlushScene extends BaseGameScene {
   private catchTarget = 15;
   private levelStartTime = 0;
   private missesPerLife = 5;
-  private statusText!: Phaser.GameObjects.Text;
   private progressText!: Phaser.GameObjects.Text;
   private cupFill!: Phaser.GameObjects.Graphics;
   private displayFillRatio = 0;
@@ -87,6 +86,10 @@ export class SlushScene extends BaseGameScene {
       body.fillStyle(0x888888, 1);
       body.fillRect(mx - 8, 164, 16, 40);
       this.add
+        .text(mx, 126, fl.fruit, { fontSize: "32px" })
+        .setOrigin(0.5)
+        .setDepth(3);
+      this.add
         .text(mx, 210, fl.emoji, { fontSize: "28px" })
         .setOrigin(0.5, 1)
         .setDepth(2);
@@ -109,18 +112,6 @@ export class SlushScene extends BaseGameScene {
     this.beger.add(cupOutline);
     this.redrawCupFill();
 
-    this.statusText = this.add
-      .text(width / 2, this.hudBottomY + 10, "", {
-        fontFamily: Theme.font,
-        fontSize: "20px",
-        color: "#ffb7dd",
-        fontStyle: "700",
-        backgroundColor: "rgba(0,0,0,0.4)",
-        padding: { x: 12, y: 4 },
-      })
-      .setOrigin(0.5, 0)
-      .setDepth(1000);
-
     this.progressText = this.add
       .text(width / 2, height - 30, "", {
         fontFamily: Theme.font,
@@ -140,7 +131,6 @@ export class SlushScene extends BaseGameScene {
     });
 
     this.startLevel();
-    this.refreshStatus();
     this.refreshProgress();
   }
 
@@ -196,10 +186,6 @@ export class SlushScene extends BaseGameScene {
     }
     const holdMs = Math.max(600, 2400 - this.level * 280);
     this.switchAt = this.time.now + holdMs + Math.random() * 300;
-  }
-
-  private refreshStatus() {
-    this.statusText.setText(`Nivå ${this.level}/${MAX_LEVEL}  •  fang ${this.catchTarget} slush!`);
   }
 
   private refreshProgress() {
@@ -324,7 +310,6 @@ export class SlushScene extends BaseGameScene {
           this.advancing = false;
           this.setLevel(completed + 1);
           this.startLevel();
-          this.refreshStatus();
           this.refreshProgress();
         });
       });

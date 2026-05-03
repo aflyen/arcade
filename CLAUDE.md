@@ -62,18 +62,18 @@ Top-down jag. Spilleren (Andrea) beveger seg med **piltaster / WASD** i en hagev
 Fullført nivå: `200 × level + (tid igjen × 10 × level)` poeng. Siste nivå gir +500 bonus.
 
 ### Slush-Kaos 🧋 (`slush`)
-Arcade-catcher i slush-kiosk. Slushdråper i forskjellige farger faller ovenfra. Spilleren flytter begeret med **mus / A,D / ←,→** og **tapper** med **SPACE / venstreklikk** for å slippe ut dråper (?? — se scene for mekanikken; intro-tekst sier «riktig fargekombinasjon uten å søle»). Mål per nivå er `catchTarget` fanger; 150 × level bonus + 20 × level per fanget. Søl/feilfarge → mister liv (3 totalt). Siste nivå: +500 vinnerbonus.
+Arcade-catcher i slush-kiosk. Slushdråper i forskjellige farger faller automatisk fra aktive maskiner. Spilleren flytter begeret med **mus / A,D / ←,→** for å fange dråpene. Mål per nivå er `catchTarget` fanger; 150 × level bonus + 20 × level per fanget. Nok bom på gulvet → mister liv (3 totalt). Siste nivå: +500 vinnerbonus.
 
 ### Trampett-Triks 🤸 (`trampett`)
-Rytme/timing. Andrea løper mot trampetten; **SPACE i den grønne sonen** gir hopp. I lufta vises en sekvens som må trykkes med **↑ ↓ ← →** i riktig rekkefølge før landing. Juryen gir poeng basert på timing og halvspinn:
+Rytme/timing. Andrea løper mot trampetten; **SPACE i den grønne sonen** gir hopp. I lufta brukes **←/→** for å rotere saltoen og **↓** for å bremse før landing. Juryen gir poeng basert på landing og halvspinn:
 - Bommet/ingen input: 5p
 - Delvis: `30 + halves × 20`
-- Perfekt sekvens + god timing: opp mot `100 × level + halves × 50`, ellers `60 × level + halves × 30`
+- Perfekt landing med nok rotasjon: opp mot `100 × level + halves × 50`, ellers `60 × level + halves × 30`
 
 Bom på landing → mister liv. Siste nivå fullført: +500 bonus.
 
 ### Sykkel-Stress 🚴‍♀️ (`sykkel`)
-Scrollende utvikerspill — sykkel over Vinges-brua. **← → eller A/D** for å styre mellom filer. Unngå andre syklister 🚴, gamle damer 👵, hunder 🐕, benker 🪑 og blomsterkasser 🌷 — treff gir tap av liv (3 totalt). Sank pickups for poeng: 🍎 eple (+20), 💧 vannflaske (+40), ⚡ lyn (fart-boost, +10). Fullført nivå: `200 + level × 100`. Siste nivå (kommer fram til treninga): +800 bonus.
+Scrollende utvikerspill — sykkel over Vinges-brua. **← → eller A/D** for å styre mellom filer. Unngå andre syklister 🚴, gamle damer 👵, hunder 🐕, benker 🪑 og blomsterkasser 🌷 — treff gir tap av liv (3 totalt). Sank pickups for poeng: 🍎 eple (+40), 💧 vannflaske (+40), ⚡ lyn (fart-boost, +20). Passerte hindre gir +10. Fullført nivå: `200 + level × 100`. Siste nivå (kommer fram til treninga): +800 bonus.
 
 ## Konvensjoner
 

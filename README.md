@@ -1,6 +1,6 @@
 # Arkade-kiosk 🎮
 
-Nettleserbasert arkade-kiosk for Andreas konfirmasjon. Fire mini-spill med topp-10 highscore, designet for Raspberry Pi 5 i kiosk-modus.
+Nettleserbasert arkade-kiosk for Andrea sin konfirmasjon. Fire mini-spill med topp-10 highscore, designet for Raspberry Pi 5 i kiosk-modus.
 
 ## Stack
 - **Frontend:** Phaser 3 + TypeScript + Vite
