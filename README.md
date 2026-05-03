@@ -32,17 +32,53 @@ SQLite-filen lagres i volumet `arcade-data` (`/data/arcade.db` inne i containere
 1. Installer Docker og docker-compose på Pi-en.
 2. `git clone` eller `scp` dette prosjektet til Pi-en.
 3. `docker compose up -d --build` (første bygg tar noen minutter).
-4. Start Chromium i kiosk-mode. Lag `~/.config/autostart/arcade.desktop`:
+4. Sjekk at containeren kjører og starter automatisk etter reboot:
+
+```bash
+docker compose ps
+docker inspect arcade --format '{{.HostConfig.RestartPolicy.Name}}'
+```
+
+`docker-compose.yml` bruker `restart: unless-stopped`, så spillet starter igjen etter reboot så lenge containeren ikke er stoppet manuelt.
+
+5. Slå av skjermsparing/blanking for Pi-brukeren:
+
+```bash
+mkdir -p ~/.config/lxsession/LXDE-pi
+nano ~/.config/lxsession/LXDE-pi/autostart
+```
+
+Legg inn disse linjene:
+
+```text
+@xset s off
+@xset -dpms
+@xset s noblank
+```
+
+6. Start Chromium i kiosk-mode. Lag `~/.config/autostart/arcade.desktop`:
 
 ```ini
 [Desktop Entry]
 Type=Application
 Name=Arkade
-Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito http://localhost:3000
+Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=Translate --autoplay-policy=no-user-gesture-required --incognito http://localhost:3000
 X-GNOME-Autostart-enabled=true
 ```
 
-Trykk `F11` for fullskjerm manuelt hvis kiosk-flagget ikke virker.
+Hvis Chromium ikke starter fra autostart på din Pi OS-versjon, legg samme kommando direkte i `~/.config/lxsession/LXDE-pi/autostart`:
+
+```text
+@chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-features=Translate --autoplay-policy=no-user-gesture-required --incognito http://localhost:3000
+```
+
+7. Reboot og test:
+
+```bash
+sudo reboot
+```
+
+Etter reboot skal Docker-containeren starte av seg selv, Chromium åpne `http://localhost:3000`, skjermen holde seg våken, og menyen gå til attract mode etter 60 sekunder uten input. Trykk `F11` for fullskjerm manuelt hvis kiosk-flagget ikke virker.
 
 ## Oppdater til nyeste versjon på Raspberry Pi
 

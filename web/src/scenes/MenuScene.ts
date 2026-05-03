@@ -4,6 +4,7 @@ import { GAME_REGISTRY } from "../core/GameRegistry.js";
 import { addSakuraBackground, makeButton, makePanel, makeText, type Button } from "../core/ui.js";
 
 const ADMIN_PIN = "2608";
+const ATTRACT_IDLE_MS = 60_000;
 type MenuFocus = "games" | "highscores";
 
 type Card = {
@@ -30,6 +31,7 @@ export class MenuScene extends Phaser.Scene {
   private pinText?: Phaser.GameObjects.Text;
   private pinError?: Phaser.GameObjects.Text;
   private suppressMenuInput = false;
+  private attractTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super("MenuScene");
@@ -113,6 +115,9 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-S", () => this.moveFocus("highscores"));
     this.input.keyboard?.on("keydown-ENTER", () => this.activateSelected());
     this.input.keyboard?.on("keydown-SPACE", () => this.activateSelected());
+    this.input.keyboard?.on("keydown", () => this.resetAttractTimer());
+    this.input.on("pointerdown", () => this.resetAttractTimer());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanupAttractTimer());
 
     this.add
       .text(width / 2, height - 26, "← → / A D velger spill   •   ↑ ↓ velger rad   •   Enter starter", {
@@ -123,8 +128,14 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.addAdminTrigger();
+    this.startAttractTimer();
     this.highlight();
     this.game.canvas.focus?.();
+  }
+
+  private cleanupAttractTimer() {
+    this.attractTimer?.remove();
+    this.attractTimer = undefined;
   }
 
   private buildCard(
@@ -256,6 +267,7 @@ export class MenuScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
     this.pinValue = "";
+    this.resetAttractTimer();
 
     const backdrop = this.add
       .rectangle(width / 2, height / 2, width, height, 0x000000, 0.55)
@@ -350,6 +362,23 @@ export class MenuScene extends Phaser.Scene {
     this.hidePinOverlay();
     this.scene.stop("MenuScene");
     this.scene.start("AdminScene", { pin });
+  }
+
+  private startAttractTimer() {
+    this.attractTimer?.remove();
+    this.attractTimer = this.time.delayedCall(ATTRACT_IDLE_MS, () => {
+      if (this.pinOverlay.length > 0 || this.suppressMenuInput) {
+        this.resetAttractTimer();
+        return;
+      }
+      this.scene.start("AttractScene");
+    });
+  }
+
+  private resetAttractTimer() {
+    if (!this.attractTimer) return;
+    this.attractTimer.remove();
+    this.startAttractTimer();
   }
 }
 
